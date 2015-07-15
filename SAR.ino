@@ -15,7 +15,7 @@
 #define GATE      9
 #define TV        10
 #define HEY_SAR   11
-#define bits_RC5  14
+#define bits_RC5  12
 
 //Variáveis
 BitVoicerSerial bvSerial = BitVoicerSerial();
@@ -40,6 +40,7 @@ int heySar = 0;
 int estado = 0;
 int quant = 0; 
 boolean reverse = false;
+unsigned long rctoggle = 0; //para os códigos RC5
 
 void doMotor()
 {
@@ -65,7 +66,9 @@ void doMotor()
 
 void sendPhilips(int data, int quant){
   int i;
-  for (i = 0; i < quant; i++)
+  for (i = 0; i < 3*quant; i++)
+    data = data ^ (rctoggle << 11);
+    rctoggle = 1 - rctoggle;
     irsend.sendRC5(data, bits_RC5);
 }
 
@@ -162,30 +165,30 @@ void serialEvent()
         {
         case VOL_UP:
           //Serial.println("Volume UP");
-          TVdata = 0x7010; 
+          TVdata = 0x0010; 
           quant = 10;
           sendPhilips(TVdata, quant);
           break;
         case VOL_DOWN:
-          TVdata = 0x7011;  
+          TVdata = 0x0011;  
           quant = 10;
           sendPhilips(TVdata, quant);
           //Serial.println("Volume DOWN");
           break;
         case CH_UP: 
-          TVdata = 0x7020;
+          TVdata = 0x0020;
           quant = 1;
           sendPhilips(TVdata, quant);
           //Serial.println("Channel Up");    
           break;
         case CH_DOWN:
           //Serial.println("Channel Down");
-          TVdata = 0x7021;
+          TVdata = 0x0021;
           quant = 1;
           sendPhilips(TVdata, quant);
           break;
         case POWER:
-          TVdata = 0x700c; //código Philips de POWER
+          TVdata = 0x000c; //código Philips de POWER
           quant = 1;
           sendPhilips(TVdata, quant);
           //Serial.println("Power");
