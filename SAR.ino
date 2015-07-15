@@ -30,7 +30,9 @@ int pinLedQ = 4;
 int pinMotor = 9;
 int pinIR = 3;
 int pinLedErro = 6;
-int pinLedLegal = 7;
+int pinLedLegal = 6;
+int pinBuzzer = 10;
+
 int ValLedErro = 0;
 int TVdata = 0;
 Servo motor;
@@ -66,24 +68,28 @@ void doMotor()
 
 void sendPhilips(int data, int quant){
   int i;
-  for (i = 0; i < 3*quant; i++)
+  for (i = 0; i < 3*quant; i++){
     data = data ^ (rctoggle << 11);
     rctoggle = 1 - rctoggle;
     irsend.sendRC5(data, bits_RC5);
-}
-
-void reconheceHeySAR(){
-  for(int i=0; i<3; i++){
-    digitalWrite(pinLedLegal, HIGH);
-    delay(200);
-    digitalWrite(pinLedLegal, LOW);
-    delay(400);
   }
 }
 
-void commando_erro(){
+void reconheceHeySAR(){
+  for(int i=0; i<2; i++){
+    digitalWrite(pinLedLegal, HIGH);
+    tone(pinBuzzer, 2400, 50);
+    delay(50);
+    tone(pinBuzzer, 2550, 70);
+    digitalWrite(pinLedLegal, LOW);
+    delay(50);
+  }
+}
+
+void comando_erro(){
     digitalWrite(pinLedErro, HIGH);
-    delay(1000);
+    tone(pinBuzzer, 2150, 500);
+    delay(700);
     digitalWrite(pinLedErro, LOW);
 }
 
@@ -96,6 +102,7 @@ void setup() {
   pinMode(pinIR, OUTPUT);       //Para o IR
   pinMode(pinLedErro, OUTPUT);
   pinMode(pinLedLegal, OUTPUT);
+  pinMode(pinBuzzer, OUTPUT);
   motor.attach(pinMotor);
 }
 void loop() {
@@ -110,6 +117,9 @@ void loop() {
     //digitalWrite(pinLedErro, ValLedErro);   // Substituído por comando_erro()
     if(ativarMotor)
       doMotor();
+
+    comando_erro();
+    delay(2000);
   }
 }  
 
@@ -128,7 +138,7 @@ void serialEvent()
           heySar = 1;
           break;
         default:
-          commando_erro();
+          comando_erro();
           break;
         }
     }else if(estado == 0 && heySar == 1){
@@ -155,7 +165,7 @@ void serialEvent()
           estado = 1;
           break;
         default:
-          commando_erro();
+          comando_erro();
           heySar = 0;
           break;
         }
@@ -199,7 +209,7 @@ void serialEvent()
           heySar = 0;
           break;
         default:
-          commando_erro();
+          comando_erro();
           break;
         }
       }
