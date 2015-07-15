@@ -14,6 +14,7 @@
 #define POWER     8
 #define GATE      9
 #define TV        10
+#define HEY_SAR   11
 #define bits_RC5  14
 
 //Variáveis
@@ -29,11 +30,13 @@ int pinLedQ = 4;
 int pinMotor = 9;
 int pinIR = 3;
 int pinLedErro = 6;
+int pinLedLegal = 7;
 int ValLedErro = 0;
 int TVdata = 0;
 Servo motor;
 IRsend irsend;
 boolean ativarMotor = false;
+int heySar = 0;
 int estado = 0;
 int quant = 0; 
 boolean reverse = false;
@@ -66,6 +69,21 @@ void sendPhilips(int data, int quant){
     irsend.sendRC5(data, bits_RC5);
 }
 
+void reconheceHeySAR(){
+  for(int i=0; i<3; i++){
+    digitalWrite(pinLedLegal, HIGH);
+    delay(200);
+    digitalWrite(pinLedLegal, LOW);
+    delay(400);
+  }
+}
+
+void commando_erro(){
+    digitalWrite(pinLedErro, HIGH);
+    delay(1000);
+    digitalWrite(pinLedErro, LOW);
+}
+
 //inicialização
 void setup() {
   Serial.begin(9600);
@@ -74,6 +92,7 @@ void setup() {
   pinMode(pinLedS, OUTPUT);
   pinMode(pinIR, OUTPUT);       //Para o IR
   pinMode(pinLedErro, OUTPUT);
+  pinMode(pinLedLegal, OUTPUT);
   motor.attach(pinMotor);
 }
 void loop() {
@@ -85,7 +104,7 @@ void loop() {
     digitalWrite(pinLedB, ValLedB);
     digitalWrite(pinLedQ, ValLedQ);
     digitalWrite(pinLedS, ValLedS);
-    digitalWrite(pinLedErro, ValLedErro);
+    //digitalWrite(pinLedErro, ValLedErro);   // Substituído por comando_erro()
     if(ativarMotor)
       doMotor();
   }
@@ -99,27 +118,42 @@ void serialEvent()
   if (dataType == BV_INT)
   {
     valorComando = bvSerial.intData;
-    if(estado == 0){
+    if(heySar == 0 && estado ==0){
+      switch(valorComando)
+        {
+        case HEY_SAR:
+          heySar = 1;
+          break;
+        default:
+          commando_erro();
+          break;
+        }
+    }else if(estado == 0 && heySar == 1){
         switch(valorComando)
         {
         case LedQuarto:
           ValLedQ = !ValLedQ;
+          heySar = 0;
           break;
         case LedSala:
           ValLedS = !ValLedS;
+          heySar = 0;
           break;
         case LedBanheiro: 
           ValLedB = !ValLedB;
+          heySar = 0;
           break;
         case GATE:
           ativarMotor = true;
+          heySar = 0;
           break;
         case TV:
           //Serial.println("Comecou TV");
           estado = 1;
           break;
         default:
-          ValLedErro = 1;
+          commando_erro();
+          heySar = 0;
           break;
         }
     }
@@ -159,9 +193,10 @@ void serialEvent()
         case TV:        
           //Serial.println("Cabou TV");
           estado = 0;
+          heySar = 0;
           break;
         default:
-          ValLedErro = 1;
+          commando_erro();
           break;
         }
       }
