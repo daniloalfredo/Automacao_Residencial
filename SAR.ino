@@ -77,9 +77,10 @@ void setup() {
   motor.attach(pinMotor);
 }
 void loop() {
-  if(estado == 1)
-    sendPhilips(TVdata, quant);
+  /*if(estado == 1)
+    sendPhilips(TVdata, quant);     // Ficaria mandando o comando a todo momento no estado==1
   else
+  */
   {
     digitalWrite(pinLedB, ValLedB);
     digitalWrite(pinLedQ, ValLedQ);
@@ -129,25 +130,30 @@ void serialEvent()
           //Serial.println("Volume UP");
           TVdata = 0x7010; 
           quant = 10;
+          sendPhilips(TVdata, quant);
           break;
         case VOL_DOWN:
           TVdata = 0x7011;  
           quant = 10;
+          sendPhilips(TVdata, quant);
           //Serial.println("Volume DOWN");
           break;
         case CH_UP: 
           TVdata = 0x7020;
           quant = 1;
+          sendPhilips(TVdata, quant);
           //Serial.println("Channel Up");    
           break;
         case CH_DOWN:
           //Serial.println("Channel Down");
           TVdata = 0x7021;
           quant = 1;
+          sendPhilips(TVdata, quant);
           break;
         case POWER:
           TVdata = 0x700c; //código Philips de POWER
           quant = 1;
+          sendPhilips(TVdata, quant);
           //Serial.println("Power");
           break;
         case TV:        
