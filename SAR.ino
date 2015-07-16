@@ -1,7 +1,7 @@
 #include <IRremote.h>
 #include <Servo.h>
 #include <BitVoicer11.h>
-
+#include <LiquidCrystal.h>
 // O LED IR deve estar conectado ao pino PWM 3
 
 #define LedQuarto 1
@@ -16,6 +16,9 @@
 #define TV        10
 #define HEY_SAR   11
 #define bits_RC5  12
+#define bits_Sony 12
+#define APAGA 12
+#define ACENDE 13
 
 //Variáveis
 BitVoicerSerial bvSerial = BitVoicerSerial();
@@ -32,6 +35,13 @@ int pinIR = 11;
 int pinLedErro = 6;
 int pinLedLegal = 6;
 int pinBuzzer = 10;
+
+int RS = 22;
+int En = 24;
+int D4 = 33;
+int D5 = 32;
+int D6 = 31;
+int D7 = 30;
 //TODO: !!!!----Acho que mudei o led do IR pra 11. Testar----!!!!! // É.. foi pro 11
 
 
@@ -45,6 +55,7 @@ int estado = 0;
 int quant = 0; 
 boolean reverse = false;
 unsigned long rctoggle = 0; //para os códigos RC5
+LiquidCrystal lcd(RS, En, D4, D5, D6, D7);
 
 void doMotor()
 {
@@ -74,10 +85,19 @@ void sendPhilips(int data, int quant){
     data = data ^ (rctoggle << 11);
     rctoggle = 1 - rctoggle;
     irsend.sendRC5(data, bits_RC5);
+    delay(100);
   }
 }
 
-
+void sendSony(int data, int quant)
+{
+  int i;
+  for (i = 0; i < 3*quant; i++)
+  {
+    irsend.sendSony(data, bits_Sony);
+    delay(100);  
+  }
+}
 
 void reconheceHeySAR(){
   for(int i=0; i<2; i++){
@@ -101,6 +121,7 @@ void comando_erro(){
 //inicialização
 void setup() {
   Serial.begin(9600);
+  lcd.begin(16,2);
   pinMode(pinLedB, OUTPUT);
   pinMode(pinLedQ, OUTPUT);
   pinMode(pinLedS, OUTPUT);
@@ -109,6 +130,8 @@ void setup() {
   pinMode(pinLedLegal, OUTPUT);
   pinMode(pinBuzzer, OUTPUT);
   motor.attach(pinMotor);
+  motor.write(0);
+  //lcd.print("Hello Motherfucker");
 
   randomSeed(analogRead(0)); //Apagar
 }
@@ -127,14 +150,14 @@ void loop() {
       doMotor();
 
     //Testes//
-    doMotor();
+    /*doMotor();
     reconheceHeySAR();
     digitalWrite(pinLedB, random(2));
     digitalWrite(pinLedQ, random(2));
     digitalWrite(pinLedS, random(2));
     for(int i=0; i<3; i++){
       irsend.sendNEC(0x0010, 16);
-    }
+    }*/
     
     delay(2000);
   }
@@ -153,6 +176,7 @@ void serialEvent()
         {
         case HEY_SAR:
           heySar = 1;
+          reconheceHeySAR();
           break;
         default:
           comando_erro();
@@ -177,8 +201,21 @@ void serialEvent()
           ativarMotor = true;
           heySar = 0;
           break;
+        case ACENDE:
+          ValLedB = 1;
+          ValLedQ = 1;
+          ValLedS = 1;
+          heySar = 0;
+          break;
+        case APAGA:
+          ValLedB = 0;
+          ValLedQ = 0;
+          ValLedS = 0;
+          heySar = 0;
+          break;
         case TV:
-          //Serial.println("Comecou TV");
+          lcd.clear();
+          lcd.print("Comecou TV");
           estado = 1;
           break;
         default:
@@ -191,7 +228,8 @@ void serialEvent()
         switch(valorComando)
         {
         case VOL_UP:
-          //Serial.println("Volume UP");
+          lcd.clear();
+          lcd.print("Volume UP");
           TVdata = 0x0010; 
           quant = 10;
           sendPhilips(TVdata, quant);
@@ -200,16 +238,19 @@ void serialEvent()
           TVdata = 0x0011;  
           quant = 10;
           sendPhilips(TVdata, quant);
-          //Serial.println("Volume DOWN");
+          lcd.clear();
+          lcd.print("Volume DOWN");
           break;
         case CH_UP: 
           TVdata = 0x0020;
           quant = 1;
           sendPhilips(TVdata, quant);
-          //Serial.println("Channel Up");    
+          lcd.clear();
+          lcd.print("Channel Up");    
           break;
         case CH_DOWN:
-          //Serial.println("Channel Down");
+          lcd.clear();
+          lcd.print("Channel Down");
           TVdata = 0x0021;
           quant = 1;
           sendPhilips(TVdata, quant);
@@ -218,10 +259,12 @@ void serialEvent()
           TVdata = 0x000c; //código Philips de POWER
           quant = 1;
           sendPhilips(TVdata, quant);
-          //Serial.println("Power");
+          lcd.clear();
+          lcd.print("Power");
           break;
         case TV:        
-          //Serial.println("Cabou TV");
+          lcd.clear();
+          lcd.print("Cabou TV");
           estado = 0;
           heySar = 0;
           break;
