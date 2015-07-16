@@ -24,14 +24,16 @@ int valorComando = 0;
 int ValLedB = 0;
 int pinLedB = 2;
 int ValLedS = 0;
-int pinLedS = 5;  //TODO: Mudar, o IR usa o 3
+int pinLedS = 3;  //TODO: Mudar, o IR usa o 3
 int ValLedQ = 0;
 int pinLedQ = 4;
 int pinMotor = 9;
-int pinIR = 3;
+int pinIR = 11;
 int pinLedErro = 6;
 int pinLedLegal = 6;
 int pinBuzzer = 10;
+//TODO: !!!!----Acho que mudei o led do IR pra 11. Testar----!!!!! // É.. foi pro 11
+
 
 int ValLedErro = 0;
 int TVdata = 0;
@@ -75,14 +77,17 @@ void sendPhilips(int data, int quant){
   }
 }
 
+
+
 void reconheceHeySAR(){
   for(int i=0; i<2; i++){
     digitalWrite(pinLedLegal, HIGH);
     tone(pinBuzzer, 2400, 50);
     delay(50);
-    tone(pinBuzzer, 2550, 70);
+    tone(pinBuzzer, 2550, 50);
     digitalWrite(pinLedLegal, LOW);
     delay(50);
+    noTone(pinBuzzer);
   }
 }
 
@@ -104,6 +109,8 @@ void setup() {
   pinMode(pinLedLegal, OUTPUT);
   pinMode(pinBuzzer, OUTPUT);
   motor.attach(pinMotor);
+
+  randomSeed(analogRead(0)); //Apagar
 }
 void loop() {
   /*if(estado == 1)
@@ -114,11 +121,21 @@ void loop() {
     digitalWrite(pinLedB, ValLedB);
     digitalWrite(pinLedQ, ValLedQ);
     digitalWrite(pinLedS, ValLedS);
+    digitalWrite(13, HIGH);
     //digitalWrite(pinLedErro, ValLedErro);   // Substituído por comando_erro()
     if(ativarMotor)
       doMotor();
 
-    comando_erro();
+    //Testes//
+    doMotor();
+    reconheceHeySAR();
+    digitalWrite(pinLedB, random(2));
+    digitalWrite(pinLedQ, random(2));
+    digitalWrite(pinLedS, random(2));
+    for(int i=0; i<3; i++){
+      irsend.sendNEC(0x0010, 16);
+    }
+    
     delay(2000);
   }
 }  
